@@ -180,7 +180,7 @@ docker cp results/flood_map_change_detection.tif ashburton_postgis:/tmp/flood_ma
 
 Then, execute the `raster2pgsql` command inside the container:
 ```bash
-docker exec -it ashburton_postgis bash -c "raster2pgsql -s 4326 -I -C -M /tmp/flood_map_change_detection.tif public.flood_map | psql -U docker_user -d ashburton_db"
+docker exec -it ashburton_postgis bash -c "/usr/bin/raster2pgsql -s 4326 -I -C -M /tmp/flood_map_change_detection.tif public.flood_map | psql -U docker_user -d ashburton_db"
 ```
 When prompted for the password, enter `P@ssw0rd123!`.
 
@@ -302,3 +302,26 @@ Here are some common issues you might encounter and their solutions:
     *   Execute the SQL command: `DROP TABLE IF EXISTS flood_map;`
     *   Then, retry the `raster2pgsql` import command.
 *   **Option B (Append Data):** If you want to add new raster data to the existing table (and the schema matches), you can use the `-a` (append) option instead of `-C` in your `raster2pgsql` command. However, for updating the same flood map, dropping and recreating is usually cleaner.
+
+### 4. `rasterio.errors.CRSError: PROJ: proj_create_from_database: Cannot find proj.db`
+
+**Issue:** When running `python scripts/process_sar.py`, you encounter an error related to `proj.db` not being found, or a version mismatch (e.g., `DATABASE.LAYOUT.VERSION.MINOR = 0 whereas a number >= 4 is expected`).
+
+**Solution:** This indicates a problem with the PROJ data files required by `rasterio` (via `pyproj`). The `proj.db` file is either missing, in an incompatible version, or not discoverable by your Python environment.
+
+*   **Step 1: Copy compatible PROJ data from the Docker container.**
+    The PostGIS Docker container (`ashburton_postgis`) contains a compatible PROJ installation. You can copy its data files to your virtual environment:
+    ```bash
+    docker cp ashburton_postgis:/usr/share/proj/ venv/share/proj/
+    ```
+*   **Step 2: Unset the `PROJ_LIB` environment variable.**
+    If you previously tried to set `PROJ_LIB`, unset it to allow `pyproj` to correctly find its data files within the `venv`:
+    ```powershell
+    $env:PROJ_LIB=""
+    ```
+    (Or close and reopen your terminal if you set it for the session.)
+*   **Step 3: Re-run the script.**
+    After performing the above steps, run the processing script again:
+    ```bash
+    python scripts/process_sar.py
+    ```

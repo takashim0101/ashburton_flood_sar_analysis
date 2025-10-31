@@ -136,7 +136,8 @@ def visualize_results(original_data, filtered_data, flood_map, downsample_factor
     axes[3].axis('off')
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join("results", "Figure_1.png"))
+    # plt.show()
 
 def analyze_ratio_histogram(ratio_image):
     """
@@ -152,7 +153,8 @@ def analyze_ratio_histogram(ratio_image):
     plt.xlabel('Ratio Value')
     plt.ylabel('Frequency')
     plt.grid(True)
-    plt.show()
+    plt.savefig(os.path.join("results", "histogram.png"))
+    # plt.show()
 
 def export_geotiff(data, profile, output_filepath):
     """
