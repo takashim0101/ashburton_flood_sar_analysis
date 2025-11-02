@@ -1,0 +1,37 @@
+flowchart TD
+    %% Data Input
+    A["Data Input<br>- Pre-flood SAR ZIP/TIFF<br>- Post-flood SAR ZIP/TIFF<br>- Annotation XML"] --> B["Preprocessing: process_sar.py"]
+
+    %% Preprocessing steps
+    B --> B0["Extract TIFF from ZIP<br>(extract_sar_tiff_from_zip)"]
+    B0 --> B1["Radiometric Calibration<br>& Speckle Filtering"]
+    B1 --> B2["Ratio Image & Change Detection"]
+    B2 --> B3["Export Flood Map GeoTIFF<br>(results/flood_map_change_detection.tif)"]
+
+    %% PostGIS Raster Storage (for analysis/visualization)
+    B3 --> B4["PostGIS Raster Storage<br>(import_flood_map.py, raster2pgsql, Dockerized DB)"]
+
+    %% ML Data Preparation (from results/ TIFFs)
+    B3 --> C["ML Data Preparation: prepare_ml_data.py"]
+    C --> C1["Normalize Pre/Post SAR,<br>Combine into 2-channel Image"]
+    C1 --> C2["Generate 256x256 Patches<br>(ml_data/train/images & masks)"]
+
+    %% U-Net Training
+    C2 --> D["U-Net Model Training: train_unet.py"]
+    D --> D1["Load Patches<br>& Data Augmentation"]
+    D1 --> D2["Train 2-channel U-Net"]
+    D2 --> D3["Save Model: models/unet_flood_detection_model.keras"]
+
+    %% API / Server
+    D3 --> E["FastAPI Server: server/server.py"]
+    E --> E1["Ollama LLM Gateway API"]
+    E --> E2["PostGIS DB Integration"]
+    E --> E3["Serve Predictions / Flood Detection"]
+
+    %% Docker Integration
+    G["Server Environment"]
+    F["Docker & DevContainer"]<-->|Integrates| E
+    F <-->|Contains| D
+    F <-->|Contains| C
+    F <-->|Contains| B
+    F <-->|Contains| G

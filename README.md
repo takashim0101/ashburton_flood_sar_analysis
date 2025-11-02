@@ -30,7 +30,7 @@ flowchart TD
 
     %% Preprocessing steps
     B --> B0["Extract TIFF from ZIP<br>(extract_sar_tiff_from_zip)"]
-    B0 --> B1["Radiometric Calibration & Speckle Filtering"]
+    B0 --> B1["Radiometric Calibration<br>& Speckle Filtering"]
     B1 --> B2["Ratio Image & Change Detection"]
     B2 --> B3["Export Flood Map GeoTIFF<br>(results/flood_map_change_detection.tif)"]
 
@@ -39,12 +39,12 @@ flowchart TD
 
     %% ML Data Preparation (from results/ TIFFs)
     B3 --> C["ML Data Preparation: prepare_ml_data.py"]
-    C --> C1["Normalize Pre/Post SAR, Combine into 2-channel Image"]
+    C --> C1["Normalize Pre/Post SAR,<br>Combine into 2-channel Image"]
     C1 --> C2["Generate 256x256 Patches<br>(ml_data/train/images & masks)"]
 
     %% U-Net Training
     C2 --> D["U-Net Model Training: train_unet.py"]
-    D --> D1["Load Patches & Data Augmentation"]
+    D --> D1["Load Patches<br>& Data Augmentation"]
     D1 --> D2["Train 2-channel U-Net"]
     D2 --> D3["Save Model: models/unet_flood_detection_model.keras"]
 
@@ -105,21 +105,73 @@ You should see logs indicating the script is running and saving its outputs.
 
 ---
 
+## 🔬 Running the Full ML Pipeline
+
+After completing the initial setup, you can run the full machine learning pipeline step-by-step inside the Docker container.
+
+**Step 1: Enter the Docker Container**
+
+First, start an interactive shell inside the `sar_analysis` container.
+
+```bash
+# Build the image if you haven't already
+docker-compose build sar_processing
+
+# Run a container with an interactive shell
+docker-compose run --rm sar_processing bash
+```
+
+**Step 2: Preprocess SAR Data**
+
+This step calibrates the raw SAR images and creates the initial flood map based on change detection.
+
+```bash
+# Inside the container
+python server/process_sar.py
+```
+
+**Step 3: Prepare Data for Machine Learning**
+
+This script takes the processed images and generates patches suitable for training the U-Net model.
+
+```bash
+# Inside the container
+python scripts/prepare_ml_data.py
+```
+> **Note:** This script processes very large images and can take a significant amount of time to complete. You may see a "Resizing..." message, which is a normal alignment step. The process is finished when you see the "ML data preparation complete." message.
+
+**Step 4: Train the U-Net Model**
+
+Train the U-Net model on the generated patches. The trained model will be saved in the `models/` directory.
+
+```bash
+# Inside the container
+python scripts/train_unet.py
+```
+
+**Step 5: Predict with the Trained Model (Optional)**
+
+Once the model is trained, you can use it to predict flood maps on new data.
+
+```bash
+# Inside the container
+python scripts/predict_ml_flood.py
+```
+
 ## 📂 Project Structure
 ```
 .
-├── scripts/                  # Scripts for SAR processing, data preparation, and flood map import
-│   ├── process_sar.py        # Main SAR preprocessing script (calibration, filtering, ratio image)
+├── scripts/                  # Utility scripts for data prep, db import, and training
 │   ├── import_flood_map.py   # Imports flood map GeoTIFF into PostGIS
 │   ├── prepare_ml_data.py    # Prepares data for ML training (patching, channel combining)
 │   └── train_unet.py         # U-Net model training script
-├── server/                   # FastAPI backend & processing environment
-│   ├── process_sar.py        # Main SAR processing pipeline
+├── server/                   # Main processing logic and FastAPI backend
+│   ├── process_sar.py        # Main SAR preprocessing pipeline
 │   ├── Dockerfile.python     # Dockerfile for the Python + GDAL processing environment
 │   └── requirements-sar.txt  # Python dependencies for SAR processing
-├── data/                     # Raw SAR data (e.g., .SAFE folders)
-├── results/                  # Output of SAR processing (e.g., flood_map_change_detection.tif)
-├── models/                   # Trained machine learning models
+├── data/                     # Raw SAR data (e.g., .SAFE folders) - Ignored by Git
+├── results/                  # Output of processing (e.g., flood maps) - Ignored by Git
+├── models/                   # Trained machine learning models - Ignored by Git
 ├── docker-compose.yml        # Defines multi-container Docker application (including PostGIS)
 └── README.md                 # Project overview and documentation
 ```
