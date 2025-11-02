@@ -1,0 +1,20 @@
+{
+  "name": "Copilot + Ollama Dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-python.python"
+      ]
+    }
+  },
+  "forwardPorts": [11434],
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"
+  ],
+  "postCreateCommand": "echo 'Ready to use Copilot and Ollama!'"
+}

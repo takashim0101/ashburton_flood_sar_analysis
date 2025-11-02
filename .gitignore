@@ -3,26 +3,38 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
 venv/
 .venv/
 env/
-.env/
-.vscode/ # VS Code specific files
-.idea/   # IntelliJ/PyCharm specific files
+
+# IDE / Editor Settings
+.vscode/
+.idea/
+
+# Gemini CLI cache
+.gemini/
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Data and Results
+# Data, Models, and Results
+# ---
+# Exclude all large data, model, and result files.
+# Only keep specific, small, representative examples if necessary.
+# ---
 data/
-results/
+ml_data/
+models/
+results/*
+!results/Figure_1.png
+!results/histogram.png
 
 # Environment variables
 .env
+*.env
+
+# Project files
+Ashburton_Flood_SAR_Pipeline.pptx
+project_flowchart.mmd
+raster.sql

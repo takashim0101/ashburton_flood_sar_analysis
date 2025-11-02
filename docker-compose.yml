@@ -1,17 +1,66 @@
-version: '3.8'
 services:
   postgis:
-    image: postgis/postgis:16-3.4
+    build:
+      context: .
+      dockerfile: postgis.Dockerfile   
     container_name: ashburton_postgis
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
+      - ./data:/data                
+      - ./results:/results          
     restart: unless-stopped
+
+  backend:
+    build: ./server
+    container_name: ollama_fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_HOST: http://host.docker.internal:11434
+      POSTGRES_HOST: postgis
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgis
+    volumes:
+      - ./server:/app
+    restart: unless-stopped
+
+  sar_processing:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.python
+    container_name: sar_analysis
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./scripts:/app/scripts
+      - ./models:/app/models
+    depends_on:
+      - postgis
+    restart: "no"
+    environment:
+      PROJ_LIB: /usr/local/share/proj
+      DATA_DIR: /app/data
+      RESULTS_DIR: /app/results
+    mem_limit: 32g
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 volumes:
   postgis_data:
+
+
