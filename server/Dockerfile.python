@@ -1,0 +1,38 @@
+# Use an NVIDIA CUDA base image for GPU support
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+# Install Python 3.11 and system dependencies (GDAL, PROJ, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3-pip \
+    gdal-bin libgdal-dev \
+    proj-bin proj-data \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.11 as the default Python
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements files
+COPY requirements-sar.txt .
+COPY requirements-backend.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-sar.txt \
+    -r requirements-backend.txt
+
+# Copy application code
+COPY . .
+
+# Set PROJ environment variable so Rasterio/GDAL can find proj.db
+ENV PROJ_LIB=/usr/share/proj
+
+# Optional: ensure proj.db exists and create a symlink (safety fallback)
+RUN if [ ! -f /usr/share/proj/proj.db ]; then \
+        ln -s /usr/lib/x86_64-linux-gnu/proj.db /usr/share/proj/proj.db || true; \
+    fi
+
+# Default command (can be overridden by docker-compose)
+CMD ["python", "server.py"]

@@ -1,0 +1,19 @@
+# SAR analysis, ML, & image processing
+asf-search
+rasterio
+scikit-image
+Shapely
+numpy
+scipy
+matplotlib
+tensorflow
+scikit-learn
+seaborn
+
+# PostGIS integration (for potential future use)
+psycopg2-binary
+geoalchemy2
+geopandas
+
+# Environment variables
+python-dotenv

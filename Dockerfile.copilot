@@ -1,0 +1,11 @@
+# Node.js 20 ベースの軽量イメージ
+FROM node:20-bullseye
+
+# Copilot CLI をグローバルインストール
+RUN npm install -g @githubnext/github-copilot-cli
+
+# PATH を追加してコマンドを直接使えるように
+ENV PATH="/usr/local/lib/node_modules/@githubnext/github-copilot-cli/bin:${PATH}"
+
+# 動作確認用
+CMD ["copilot", "--version"]

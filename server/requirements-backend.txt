@@ -1,0 +1,12 @@
+# FastAPI & communication
+fastapi
+uvicorn
+requests
+
+# Database (PostGIS integration)
+psycopg2-binary
+geoalchemy2
+geopandas
+
+# Environment variables
+python-dotenv
