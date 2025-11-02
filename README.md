@@ -55,11 +55,12 @@ flowchart TD
     E --> E3["Serve Predictions / Flood Detection"]
 
     %% Docker Integration
+    G["Server Environment"]
     F["Docker & DevContainer"]<-->|Integrates| E
     F <-->|Contains| D
     F <-->|Contains| C
     F <-->|Contains| B
-    F <-->|Contains| Server Environment
+    F <-->|Contains| G
 ```
 
 ---
