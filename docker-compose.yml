@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
       - ./data:/data                
@@ -33,6 +33,13 @@ services:
     volumes:
       - ./server:/app
     restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   sar_processing:
     build:
@@ -44,6 +51,7 @@ services:
       - ./results:/app/results
       - ./scripts:/app/scripts
       - ./models:/app/models
+      - ./ml_data:/app/ml_data
     depends_on:
       - postgis
     restart: "no"
