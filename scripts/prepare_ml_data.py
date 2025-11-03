@@ -17,6 +17,7 @@ def create_patches(image, mask, patch_size, output_dir, prefix):
 
             # Only save patches that contain some flood area to focus training
             if np.any(img_patch > 0) and np.any(mask_patch > 0):
+                print(f"Shape of mask_patch before saving: {mask_patch.shape}")
                 # Save image patch
                 img_patch_path = os.path.join(output_dir, "images", f"{prefix}_img_{patch_count:04d}.npy")
                 np.save(img_patch_path, img_patch)
@@ -77,6 +78,7 @@ if __name__ == "__main__":
         post_flood_sar = src.read(1)
     with rasterio.open(flood_map_filepath) as src:
         flood_mask = src.read(1)
+    print(f"Shape of flood_mask after loading: {flood_mask.shape}")
 
     # Resize SAR images to match the flood_mask dimensions for patching
     if post_flood_sar.shape != flood_mask.shape:

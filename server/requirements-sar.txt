@@ -6,7 +6,7 @@ Shapely
 numpy
 scipy
 matplotlib
-tensorflow
+tensorflow[and-cuda]
 scikit-learn
 seaborn
 
