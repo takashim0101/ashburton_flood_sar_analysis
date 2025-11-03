@@ -9,7 +9,7 @@ It combines advanced geospatial data preprocessing, deep learning, and a robust,
 
 ## ✨ Key Features
 
-*   **End-to-End Geospatial Workflow:** From raw Sentinel-1 imagery to a final flood map, the entire pipeline is automated, including radiometric calibration, speckle filtering, and change detection.
+*   **End-to-End Geospatial Workflow:** From raw Sentinel-1 imagery to a final flood map, the entire pipeline is automated, including radiometric calibration, speckle filtering, and change detection. These preprocessing steps are crucial for accurate SAR analysis by correcting sensor biases and reducing noise.
 *   **Deep Learning for Flood Prediction:** A 2-channel U-Net model (Keras/TensorFlow) is trained to accurately predict flood extent from pre- and post-flood SAR images.
 *   **GPU Accelerated Processing:** Leverages NVIDIA CUDA via `server/Dockerfile.python` for accelerated SAR data processing and deep learning model training (TensorFlow).
 *   **Containerized & Reproducible Environment:** The entire stack—including the processing environment, a PostGIS database, and a FastAPI server—is containerized with Docker, ensuring seamless setup and reproducibility.
@@ -165,6 +165,28 @@ After the model has learned, this step uses it to find flooded areas in new, uns
 ```bash
 # Inside the container
 python scripts/predict_ml_flood.py
+
+**Step 6: Convert Prediction to PNG for Visualization**
+
+To easily visualize the flood prediction, convert the output GeoTIFF to a PNG image. This PNG can then be used in documentation or for quick viewing.
+
+```bash
+# Inside the container
+# Convert U-Net prediction GeoTIFF to PNG
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_unet_prediction.tif /app/results/flood_map_unet_prediction.png --colorize
+
+# Convert Change Detection GeoTIFF to PNG
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_change_detection.tif /app/results/flood_map_change_detection.png --colorize
+```
+
+**Step 7: Generate Comparison Figure**
+
+Create a composite image comparing the different flood maps for easier visual analysis.
+
+```bash
+# Inside the container
+python scripts/compare_flood_maps.py
+```
 ```
 
 ## 📂 Project Structure
@@ -191,13 +213,36 @@ python scripts/predict_ml_flood.py
 
 This analysis generates several key outputs, which are saved in the `results/` directory.
 
-### 1. Flood Map (GeoTIFF)
+### 1. Flood Maps (PNG & GeoTIFF)
 
-The primary output is a georeferenced flood map that precisely delineates the inundated areas.
+The primary output is a georeferenced flood map that precisely delineates the inundated areas. We provide both the raw GeoTIFF and a PNG visualization for easier viewing.
 
 | File                                     | Description                                          |
 | :--------------------------------------- | :--------------------------------------------------- |
-| `results/flood_map_change_detection.tif` | Final georeferenced flood extent map (GeoTIFF format). |
+| `results/flood_map_change_detection.tif` | Final georeferenced flood extent map (GeoTIFF format) from change detection. |
+| `results/flood_map_unet_prediction.tif`  | Final georeferenced flood extent map (GeoTIFF format) from U-Net prediction. |
+
+#### Visualizations:
+
+**Change Detection Flood Map:**
+![Change Detection Flood Map](results/flood_map_change_detection.png)
+
+**U-Net Prediction Flood Map:**
+![U-Net Prediction Flood Map](results/flood_map_unet_prediction.png)
+
+#### Comparison of Flood Mapping Methods:
+
+This project utilizes two distinct approaches to flood mapping, each with its own characteristics:
+
+*   **Change Detection Method:** This is a more traditional approach that compares pre-flood and post-flood SAR images based on pixel intensity changes (e.g., ratio or difference). Areas with significant changes beyond a certain threshold are classified as flooded. While straightforward, it can be sensitive to noise and may misclassify areas due to factors other than flooding.
+
+*   **U-Net Prediction Method:** This method employs a deep learning model (U-Net) trained on examples of flood events. The U-Net learns complex patterns to identify flooded regions, outputting a probability for each pixel. This approach is generally more robust to noise and can achieve higher accuracy by capturing subtle features, offering a more nuanced prediction.
+
+#### Flood Map Comparison:
+
+**Change Detection vs. U-Net Prediction:**
+![Flood Map Comparison](results/Figure_Flood_Map_Comparison.png)
+*Note: The color bar in the comparison figure represents flood probability from 0.1 (low) to 1.0 (high), with transparent areas indicating very low or no flood probability.*
 
 ### 2. Visual Analysis (`Figure_1.png`)
 
@@ -243,7 +288,7 @@ To enable GPU acceleration for Docker containers, follow these steps:
 1.  **Install NVIDIA Container Toolkit and Choose a CUDA Base Image:**
     Follow the official [installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) for your specific Linux distribution. This tool allows Docker to interact with your NVIDIA GPU.
 
-    Additionally, ensure your `Dockerfile` (e.g., `server/Dockerfile.python`) uses a currently recommended NVIDIA CUDA base image. You can find the latest supported images on the [NVIDIA CUDA Docker Hub page](https://hub.docker.com/r/nvidia/cuda/tags). For example, `nvidia/cuda:13.0.1-runtime-ubuntu24.04` は最近の選択肢です。`nvidia/cuda:11.0-base`のような非推奨のイメージは避けてください。
+    Additionally, ensure your `Dockerfile` (e.g., `server/Dockerfile.python`) uses a currently recommended NVIDIA CUDA base image. You can find the latest supported images on the [NVIDIA CUDA Docker Hub page](https://hub.docker.com/r/nvidia/cuda/tags). For example, `nvidia/cuda:13.0.1-runtime-ubuntu24.04` is a recent choice. Avoid deprecated images like `nvidia/cuda:11.0-base`.
 
 2.  **Restart Docker Daemon:**
     After installing the NVIDIA Container Toolkit, you need to restart your Docker daemon to apply the changes.
