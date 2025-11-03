@@ -116,7 +116,7 @@ After completing the initial setup, you can run the full machine learning pipeli
 First, start an interactive shell inside the `sar_analysis` container.
 
 ```bash
-# Build the image if you haven\'t already
+# Build the image if you haven't already
 docker-compose build sar_processing
 
 # Run a container with an interactive shell
@@ -165,6 +165,7 @@ After the model has learned, this step uses it to find flooded areas in new, uns
 ```bash
 # Inside the container
 python scripts/predict_ml_flood.py
+```
 
 **Step 6: Convert Prediction to PNG for Visualization**
 
@@ -186,7 +187,6 @@ Create a composite image comparing the different flood maps for easier visual an
 ```bash
 # Inside the container
 python scripts/compare_flood_maps.py
-```
 ```
 
 ## 📂 Project Structure
@@ -323,6 +323,7 @@ Canterbury, New Zealand
 *Specializing in Geospatial Data Science, Network & Cloud Technology, and Remote Sensing*
 
 ---
+
 
 ## ⚠️ Common Docker Issues
 
