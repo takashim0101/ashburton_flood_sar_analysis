@@ -167,25 +167,20 @@ After the model has learned, this step uses it to find flooded areas in new, uns
 python scripts/predict_ml_flood.py
 ```
 
-**Step 6: Convert Prediction to PNG for Visualization**
+**Step 6: Generate Final PNG Images for Visualization**
 
-To easily visualize the flood prediction, convert the output GeoTIFF to a PNG image. This PNG can then be used in documentation or for quick viewing.
-
-```bash
-# Inside the container
-# Convert U-Net prediction GeoTIFF to PNG
-python scripts/convert_geotiff_to_png.py /app/results/flood_map_unet_prediction.tif /app/results/flood_map_unet_prediction.png --colorize
-
-# Convert Change Detection GeoTIFF to PNG
-python scripts/convert_geotiff_to_png.py /app/results/flood_map_change_detection.tif /app/results/flood_map_change_detection.png --colorize
-```
-
-**Step 7: Generate Comparison Figure**
-
-Create a composite image comparing the different flood maps for easier visual analysis.
+These commands convert the generated GeoTIFF flood maps into PNG images, overlaying them on the post-flood SAR image for better context.
 
 ```bash
 # Inside the container
+
+# 1. Convert the Change Detection map to PNG (with overlay)
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_change_detection.tif /app/results/post_flood_filtered.tif /app/results/flood_map_change_detection.png --colorize
+
+# 2. Convert the U-Net prediction map to PNG (with overlay)
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_unet_prediction.tif /app/results/post_flood_filtered.tif /app/results/flood_map_unet_prediction.png --colorize
+
+# 3. Generate the side-by-side comparison figure
 python scripts/compare_flood_maps.py
 ```
 
@@ -242,7 +237,7 @@ This project utilizes two distinct approaches to flood mapping, each with its ow
 
 **Change Detection vs. U-Net Prediction:**
 ![Flood Map Comparison](results/Figure_Flood_Map_Comparison.png)
-*Note: The color bar in the comparison figure represents flood probability from 0.1 (low) to 1.0 (high), with transparent areas indicating very low or no flood probability.*
+*Note: The color bar indicates flood risk using a red gradient (light red = low risk, dark red = high risk). The scale shows probability (%), and areas below the minimum threshold are not colored.*
 
 ### 2. Visual Analysis (`Figure_1.png`)
 
@@ -261,6 +256,7 @@ A histogram of the ratio image is created to help analyze the distribution of ch
 ## 🧠 Key Functions & Technical Notes
 - **`process_in_chunks()`**: Processes large SAR images in smaller chunks to minimize memory overflow, a common issue with geospatial raster data.
 - **`sar_denoise()`**: Applies a median filter (`scikit-image`) to reduce speckle noise inherent in SAR imagery.
+- **Downsampling**: Reduces image resolution for visualization scripts. Since SAR images are very large, this improves performance, reduces memory usage, and has a side effect of smoothing fine noise.
 - **`parse_annotation_xml()`**: Reads GCPs and pixel spacing from Sentinel-1 metadata to ensure correct georeferencing.
 - **`export_geotiff()`**: Writes the final flood map to a compressed, georeferenced GeoTIFF file using Rasterio.
 - **PROJ_LIB Environment**: The Dockerfile sets `ENV PROJ_LIB=/usr/share/proj` to prevent common `CRSError` issues with Rasterio by ensuring it can find the projection database.
@@ -268,9 +264,10 @@ A histogram of the ratio image is created to help analyze the distribution of ch
 ---
 
 ## 🧭 Future Improvements
-- ✅ **Enhanced GPU Acceleration:** Explore integrating CuPy or PyTorch for further accelerating filtering and processing beyond current TensorFlow GPU capabilities.
-- ✅ **AOI Clipping:** Add a feature to clip the analysis to a specific Area of Interest (AOI) using a shapefile or PostGIS geometry.
-- ✅ **API Integration:** Fully integrate the processing pipeline with the FastAPI backend to allow for on-demand flood analysis via API calls.
+- [ ] **Quantitative Accuracy Assessment**: Objectively evaluate model accuracy using metrics like F1-Score and IoU against ground truth data (e.g., optical satellite imagery).
+- [ ] **Enhanced GPU Acceleration:** Explore integrating CuPy or PyTorch for further accelerating filtering and processing.
+- [ ] **AOI Clipping:** Add a feature to clip the analysis to a specific Area of Interest (AOI) using a shapefile or PostGIS geometry.
+- [ ] **API Integration:** Fully integrate the processing pipeline with the FastAPI backend to allow for on-demand flood analysis via API calls.
 
 ---
 
