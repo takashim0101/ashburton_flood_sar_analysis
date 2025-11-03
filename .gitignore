@@ -29,6 +29,9 @@ models/
 results/*
 !results/Figure_1.png
 !results/histogram.png
+!results/flood_map_change_detection.png
+!results/flood_map_unet_prediction.png
+!results/Figure_Flood_Map_Comparison.png
 
 # Environment variables
 .env
