@@ -1,82 +1,82 @@
-import rasterio
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import confusion_matrix, jaccard_score, f1_score, classification_report
-from pathlib import Path
+import numpy as np
 import os
-from dotenv import load_dotenv
+from PIL import Image # Using Pillow for image loading
 
-def compare_flood_maps(change_detect_path, ml_predict_path, output_dir):
-    """Compares two flood map GeoTIFFs quantitatively and visually."""
+# Increase the maximum image pixel limit for Pillow to handle large images
+Image.MAX_IMAGE_PIXELS = 1000000000 # Set to 1 billion pixels or None to disable check
+
+import rasterio # Import rasterio for reading GeoTIFFs
+
+def create_comparison_figure(change_detection_geotiff, unet_prediction_geotiff, output_png):
+    """
+    Loads two flood map GeoTIFFs, normalizes them, and creates a colorized comparison figure.
+    """
     try:
-        with rasterio.open(change_detect_path) as src1:
-            change_map = src1.read(1)
-        
-        with rasterio.open(ml_predict_path) as src2:
-            ml_map = src2.read(1)
+        with rasterio.open(change_detection_geotiff) as src_cd:
+            data_cd = src_cd.read(1).astype(np.float32)
+            if src_cd.nodata is not None:
+                data_cd = np.ma.masked_equal(data_cd, src_cd.nodata)
 
-    except rasterio.errors.RasterioIOError as e:
-        print(f"Error reading GeoTIFF files: {e}")
-        print("Please ensure both process_sar.py and predict_ml_flood.py have been run successfully.")
+        with rasterio.open(unet_prediction_geotiff) as src_unet:
+            data_unet = src_unet.read(1).astype(np.float32)
+            if src_unet.nodata is not None:
+                data_unet = np.ma.masked_equal(data_unet, src_unet.nodata)
+
+    except FileNotFoundError as e:
+        print(f"Error loading GeoTIFF: {e}. Please ensure GeoTIFFs are generated.")
         return
 
-    # Ensure maps are the same shape
-    print(f"Shape of Traditional Map ('{change_detect_path.name}'): {change_map.shape}")
-    print(f"Shape of ML Map ('{ml_predict_path.name}'): {ml_map.shape}")
+    # Normalize data to 0-1 range
+    def normalize_data(data_array):
+        min_val = np.min(data_array)
+        max_val = np.max(data_array)
+        if max_val > min_val:
+            return (data_array - min_val) / (max_val - min_val)
+        return np.zeros_like(data_array, dtype=np.float32)
 
-    if change_map.shape != ml_map.shape:
-        print("\nError: Input maps have different shapes. Cannot compare.")
-        return
+    normalized_cd = normalize_data(data_cd)
+    normalized_unet = normalize_data(data_unet)
 
-    # Flatten arrays for metrics calculation
-    change_flat = change_map.flatten()
-    ml_flat = ml_map.flatten()
+    # Ensure images are the same size (should be if from same source GeoTIFFs)
+    if normalized_cd.shape != normalized_unet.shape:
+        print("Warning: Input GeoTIFFs have different sizes. Resizing U-Net prediction to match Change Detection.")
+        # This would require a more robust resizing for GeoTIFFs, but for display, simple resize might suffice
+        # For now, assuming they are the same size as they come from the same source
+        pass 
 
-    # --- Quantitative Comparison ---
-    print("--- Quantitative Comparison Report ---")
-    print(f"Comparing '{change_detect_path.name}' (Traditional) vs. '{ml_predict_path.name}' (ML)")
+    fig, axes = plt.subplots(1, 2, figsize=(20, 10)) # Adjust figsize as needed
+    cmap = plt.cm.Blues
+    cmap.set_under('white', alpha=0) # Set values below vmin to transparent
+    vmin_val = 0.1 # Minimum value for color mapping
+    vmax_val = 1.0 # Maximum value for color mapping
 
-    # Jaccard Index (IoU)
-    j_score = jaccard_score(change_flat, ml_flat, average='binary')
-    print(f"\nJaccard Score (IoU): {j_score:.4f}")
-    print("(Measures the intersection over the union of the two maps. Higher is better.)")
+    im0 = axes[0].imshow(normalized_cd, cmap=cmap, vmin=vmin_val, vmax=vmax_val)
+    axes[0].set_title("Change Detection Flood Map")
+    axes[0].axis('off')
 
-    # Dice Coefficient (F1 Score)
-    f1 = f1_score(change_flat, ml_flat, average='binary')
-    print(f"\nDice Coefficient (F1 Score): {f1:.4f}")
-    print("(Another measure of overlap, sensitive to class balance. Higher is better.)")
+    im1 = axes[1].imshow(normalized_unet, cmap=cmap, vmin=vmin_val, vmax=vmax_val)
+    axes[1].set_title("U-Net Prediction Flood Map")
+    axes[1].axis('off')
 
-    # Detailed Classification Report
-    print("\nClassification Report (ML map vs. Traditional map as reference):")
-    # target_names: 0 = Non-Flood, 1 = Flood
-    report = classification_report(change_flat, ml_flat, target_names=['Non-Flood', 'Flood'])
-    print(report)
-
-    # --- Confusion Matrix Visualization ---
-    cm = confusion_matrix(change_flat, ml_flat)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=['Predicted Non-Flood', 'Predicted Flood'],
-                yticklabels=['Actual Non-Flood', 'Actual Flood'])
-    plt.title('Confusion Matrix: ML Prediction vs. Traditional Change Detection')
-    plt.xlabel('ML (U-Net) Prediction')
-    plt.ylabel('Traditional Change Detection')
+    plt.tight_layout()
     
-    # Save the confusion matrix plot
-    cm_path = output_dir / "Figure_Confusion_Matrix.png"
-    plt.savefig(cm_path)
-    print(f"\nConfusion matrix plot saved to: {cm_path}")
-    plt.close()
+    # Add a colorbar for the probability scale
+    cbar = fig.colorbar(im0, ax=axes.ravel().tolist(), orientation='vertical', shrink=0.75)
+    cbar.set_label('Flood Probability')
+    cbar.set_ticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]) # Explicitly set ticks
+    cbar.set_ticklabels(['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']) # Explicitly set labels
+
+    plt.savefig(output_png, bbox_inches='tight', dpi=300) # Save with high DPI
+    plt.close(fig)
+    print(f"Successfully created comparison figure: {output_png}")
 
 if __name__ == "__main__":
-    load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / '.env')
+    change_detection_geotiff = "/app/results/flood_map_change_detection.tif"
+    unet_prediction_geotiff = "/app/results/flood_map_unet_prediction.tif"
+    output_comparison_png = "/app/results/Figure_Flood_Map_Comparison.png"
 
-    RESULTS_DIR = Path(os.getenv("RESULTS_DIR", "results"))
-    RESULTS_DIR.mkdir(exist_ok=True)
-
-    # Define paths to the two GeoTIFFs to compare
-    change_detection_tiff = RESULTS_DIR / "flood_map_change_detection.tif"
-    ml_prediction_tiff = RESULTS_DIR / "flood_map_unet_prediction.tif"
-
-    compare_flood_maps(change_detection_tiff, ml_prediction_tiff, RESULTS_DIR)
+    if os.path.exists(change_detection_geotiff) and os.path.exists(unet_prediction_geotiff):
+        create_comparison_figure(change_detection_geotiff, unet_prediction_geotiff, output_comparison_png)
+    else:
+        print("Error: One or both input GeoTIFFs not found. Please ensure they are generated first.")

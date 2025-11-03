@@ -173,10 +173,19 @@ To easily visualize the flood prediction, convert the output GeoTIFF to a PNG im
 ```bash
 # Inside the container
 # Convert U-Net prediction GeoTIFF to PNG
-python scripts/convert_geotiff_to_png.py /app/results/flood_map_unet_prediction.tif /app/results/flood_map_unet_prediction.png
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_unet_prediction.tif /app/results/flood_map_unet_prediction.png --colorize
 
 # Convert Change Detection GeoTIFF to PNG
-python scripts/convert_geotiff_to_png.py /app/results/flood_map_change_detection.tif /app/results/flood_map_change_detection.png
+python scripts/convert_geotiff_to_png.py /app/results/flood_map_change_detection.tif /app/results/flood_map_change_detection.png --colorize
+```
+
+**Step 7: Generate Comparison Figure**
+
+Create a composite image comparing the different flood maps for easier visual analysis.
+
+```bash
+# Inside the container
+python scripts/compare_flood_maps.py
 ```
 ```
 
@@ -220,6 +229,20 @@ The primary output is a georeferenced flood map that precisely delineates the in
 
 **U-Net Prediction Flood Map:**
 ![U-Net Prediction Flood Map](results/flood_map_unet_prediction.png)
+
+#### Comparison of Flood Mapping Methods:
+
+This project utilizes two distinct approaches to flood mapping, each with its own characteristics:
+
+*   **Change Detection Method:** This is a more traditional approach that compares pre-flood and post-flood SAR images based on pixel intensity changes (e.g., ratio or difference). Areas with significant changes beyond a certain threshold are classified as flooded. While straightforward, it can be sensitive to noise and may misclassify areas due to factors other than flooding.
+
+*   **U-Net Prediction Method:** This method employs a deep learning model (U-Net) trained on examples of flood events. The U-Net learns complex patterns to identify flooded regions, outputting a probability for each pixel. This approach is generally more robust to noise and can achieve higher accuracy by capturing subtle features, offering a more nuanced prediction.
+
+#### Flood Map Comparison:
+
+**Change Detection vs. U-Net Prediction:**
+![Flood Map Comparison](results/Figure_Flood_Map_Comparison.png)
+*Note: The color bar in the comparison figure represents flood probability from 0.1 (low) to 1.0 (high), with transparent areas indicating very low or no flood probability.*
 
 ### 2. Visual Analysis (`Figure_1.png`)
 
