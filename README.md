@@ -1,9 +1,9 @@
 # 🌊 Ashburton Flood SAR Analysis
 
 ## 🛰️ Overview
-This project implements an end-to-end pipeline to detect flood-affected areas in the **Ashburton region (Canterbury, NZ)** by analyzing **Sentinel-1 SAR imagery** from the May–June 2021 flood event.
+This project implements an end-to-end pipeline to detect flood-affected areas in the **Ashburton region (Canterbury, NZ)** by analysing **Sentinel-1 SAR imagery** from the May–June 2021 flood event.
 
-It combines advanced geospatial data preprocessing, deep learning, and a robust, containerized architecture to deliver actionable flood mapping and analysis.
+It combines advanced geospatial data preprocessing, deep learning, and a robust, containerised architecture to deliver actionable flood mapping and analysis.
 
 ---
 
@@ -35,7 +35,7 @@ flowchart TD
     B1 --> B2["Ratio Image & Change Detection"]
     B2 --> B3["Export Flood Map GeoTIFF<br>(results/flood_map_change_detection.tif)"]
 
-    %% PostGIS Raster Storage (for analysis/visualization)
+    %% PostGIS Raster Storage (for analysis/visualisation)
     B3 --> B4["PostGIS Raster Storage<br>(import_flood_map.py, raster2pgsql, Dockerized DB)"]
 
     %% ML Data Preparation (from results/ TIFFs)
@@ -73,7 +73,7 @@ flowchart TD
 - Sentinel-1 `.SAFE` data folders
 
 ### 2️⃣ Environment Setup
-Create a `.env` file in the project root with the path to your data directory. This approach, combined with Docker volumes, ensures cross-OS compatibility (e.g., Windows, Linux) by standardizing the path within the container.
+Create a `.env` file in the project root with the path to your data directory. This approach, combined with Docker volumes, ensures cross-OS compatibility (e.g., Windows, Linux) by standardising the path within the container.
 
 ```
 DATA_DIR=/app/data
@@ -134,17 +134,17 @@ python server/process_sar.py
 
 **Step 3: Prepare Data for Machine Learning**
 
-Here, we take the prepared images and cut them into smaller, manageable pieces (called "patches"). These patches are then organized in a way that our U-Net machine learning model can easily learn from them to identify flood patterns.
+Here, we take the prepared images and cut them into smaller, manageable pieces (called "patches"). These patches are then organised in a way that our U-Net machine learning model can easily learn from them to identify flood patterns.
 
 ```bash
 # Inside the container
 python scripts/prepare_ml_data.py
 ```
-> **Note:** This script processes very large images and can take a significant amount of time to complete. You may see a "Resizing..." message, which is a normal alignment step. The process is finished when you see the "ML data preparation complete." message.
+> **Note:** This script processes very large images and can take a significant amount of time to complete. You may see a "Resizing..." message, which is a normal alignment step. The process is finished when you see the "ML data preparation complete" message.
 
 **Step 4: Train the U-Net Model**
 
-In this step, the U-Net model learns to recognize flood patterns by looking at the many image patches we prepared. It's like teaching a computer to distinguish between flooded and non-flooded areas. Once it's done learning, the trained model is saved so we can use it later for predictions.
+In this step, the U-Net model learns to recognise flood patterns by looking at the many image patches we prepared. It's like teaching a computer to distinguish between flooded and non-flooded areas. Once it's done learning, the trained model is saved so we can use it later for predictions.
 
 You can run this either by entering the container first (as in Step 1) and then executing the script, or more directly from your host machine:
 
@@ -167,7 +167,7 @@ After the model has learned, this step uses it to find flooded areas in new, uns
 python scripts/predict_ml_flood.py
 ```
 
-**Step 6: Generate Final PNG Images for Visualization**
+**Step 6: Generate Final PNG Images for Visualisation**
 
 These commands convert the generated GeoTIFF flood maps into PNG images, overlaying them on the post-flood SAR image for better context.
 
@@ -210,7 +210,7 @@ This analysis generates several key outputs, which are saved in the `results/` d
 
 ### 1. Flood Maps (PNG & GeoTIFF)
 
-The primary output is a georeferenced flood map that precisely delineates the inundated areas. We provide both the raw GeoTIFF and a PNG visualization for easier viewing.
+The primary output is a georeferenced flood map that precisely delineates the inundated areas. We provide both the raw GeoTIFF and a PNG visualisation for easier viewing.
 
 | File                                     | Description                                          |
 | :--------------------------------------- | :--------------------------------------------------- |
@@ -310,7 +310,9 @@ To enable GPU acceleration for Docker containers, follow these steps:
 ---
 
 ## ⚖️ License
-MIT License © 2025
+This project is licensed under a proprietary license.  
+Commercial use, redistribution, or modification is not permitted without explicit permission from the author.  
+For inquiries, please contact: [https://github.com/takashim0101](https://github.com/takashim0101)
 
 ---
 
